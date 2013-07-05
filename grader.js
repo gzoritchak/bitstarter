@@ -24,6 +24,8 @@
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+var restler = require('restler');
+var URL_DEFAULT = "http://localhost:5000";
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 
@@ -36,21 +38,24 @@ var assertFileExists = function(infile) {
     return instr;
 };
 
-var cheerioHtmlFile = function(htmlfile) {
-    return cheerio.load(fs.readFileSync(htmlfile));
+var assertUrlExists = function(url) {
+    return url;
+};
+
+var cheerioString = function(html) {
+    return cheerio.load(html);
 };
 
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+var checkHtml = function(html, checksfile) {
+    $ = cheerioString(html);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
-        var present = $(checks[ii]).length > 0;
-        out[checks[ii]] = present;
+        out[checks[ii]] = $(checks[ii]).length > 0;
     }
     return out;
 };
@@ -65,10 +70,26 @@ if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url <html_url>', 'Url to test', clone(assertUrlExists), URL_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    var checkJson;
+    if(program.url != null){
+        console.log("Parsing url : " + program.url);
+        restler.get(program.url).on('complete', function(data) {
+            if (data instanceof Error) {
+                console.log('Error: ' + data.message);
+                this.retry(2000); // try again after 5 sec
+            } else {
+                checkJson = checkHtml(data, program.checks);
+                var outJson = JSON.stringify(checkJson, null, 4);
+                console.log(outJson);
+            }
+        });
+    } else{
+        checkJson = checkHtml(fs.readFileSync(program.file).toString(), program.checks);
+        var outJson = JSON.stringify(checkJson, null, 4);
+        console.log(outJson);
+    }
 } else {
-    exports.checkHtmlFile = checkHtmlFile;
+    exports.checkHtml = checkHtml;
 }
