@@ -74,7 +74,7 @@ if(require.main == module) {
         .parse(process.argv);
     var checkJson;
     if(program.url != null){
-        console.log("Parsing url : " + program.url);
+//        console.log("Parsing url : " + program.url);
         restler.get(program.url).on('complete', function(data) {
             if (data instanceof Error) {
                 console.log('Error: ' + data.message);
