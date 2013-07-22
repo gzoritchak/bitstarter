@@ -1,1 +1,1 @@
-https://github.com/gzoritchak/bitstarter/blob/908afafbc7ec84c52e479e12b301174fcbb53f9f/index.html
+https://raw.github.com/gzoritchak/bitstarter/3b062bf41379763305b3e43166f9473d13e428b6/index.html
